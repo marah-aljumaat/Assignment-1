@@ -238,7 +238,37 @@ EXEC AddNewAssignment 4, 'Web API Assignment 6', 'Create what is requested', 0.0
 SELECT * FROM Assignments;
 
 ----Create function to calculate the Student Grade in a Course. Return ‘A', 'B’, etc…
+CREATE OR ALTER FUNCTION CalculateStudentGrade(@Grade FLOAT)
+RETURNS CHAR(1)
+AS
+BEGIN
+    DECLARE @LetterGrade CHAR(1);
+    IF @Grade >= 90
+        SET @LetterGrade = 'A';
+    ELSE IF @Grade >= 80
+        SET @LetterGrade = 'B';
+    ELSE IF @Grade >= 70
+        SET @LetterGrade = 'C';
+    ELSE IF @Grade >= 60
+        SET @LetterGrade = 'D';
+    ELSE
+        SET @LetterGrade = 'F';
+    RETURN @LetterGrade;
+END;
+
+SELECT dbo.CalculateStudentGrade(50) AS LetterGrade; 
 
 ----Create a function to calculate the GPA of a student.
+CREATE OR ALTER FUNCTION CalculateGPA(@StudentId INT)
+RETURNS FLOAT
+AS
+BEGIN
+    DECLARE @GPA FLOAT;
+    SELECT @GPA = AVG(Grade)
+    FROM Grades
+    WHERE StudentId = @StudentId;
+    RETURN @GPA;
+END;
 
+SELECT dbo.CalculateGPA(2) AS CalculatedGPA;
 
