@@ -137,23 +137,24 @@ VALUES
 (1,2,95),
 (1,3,90),
 (1,4,85),
-(2,1,92),
+(20,1,92),
 (2,2,88),
-(2,3,91),
-(2,4,87),
-(3,1,94),
+(21,3,91),
+(17,4,87),
+(13,1,94),
 (3,2,89),
-(3,3,93),
-(3,4,86),
-(4,1,90),
-(4,2,85),
-(4,3,88),
-(4,4,82),
-(5,1,91),
+(19,3,93),
+(24,4,86),
+(7,1,90),
+(8,2,85),
+(9,3,88),
+(11,4,82),
+(12,1,91),
 (5,2,87),
 (5,3,89),
 (5,4,84);
 SELECT * FROM Grades;
+
 
 ----Write a SELECT query to list all courses.
 SELECT Courses.CourseName FROM Courses
@@ -175,20 +176,54 @@ DELETE FROM Comments WHERE CommentId = 8;
 SELECT * FROM Comments;
 
 
-----Write a query to list all students along with their grades for a specific course. (not completed)
+----Write a query to list all students along with their grades for a specific course. Users-Grades relationship ? we alson need Assignments (so hard)
 UPDATE Users SET Role = 'Student' WHERE UserId = 1;
+SELECT Users.FirstName, Users.LastName, Grades.Grade, Assignments.CourseId FROM Users INNER JOIN Grades ON Users.UserId = Grades.StudentId ---link the Users table with the Grades table to get the names and grades 
+INNER JOIN Assignments ON Grades.AssignmentId = Assignments.AssignmentId
+WHERE Assignments.CourseId =1;
 
-----Write a query to calculate the average grade for each course.
+----Write a query to calculate the average grade for each course. courses-gardes-assignments relationship ? (So hard)
+SELECT Courses.CourseName, AVG(Grades.Grade) AS AverageGrade FROM Courses INNER JOIN Assignments ON Courses.CourseId = Assignments.CourseId
+INNER JOIN Grades ON Assignments.AssignmentId = Grades.AssignmentId
+GROUP BY Courses.CourseName;
 
-----Write a query to list all courses with their respective syllabuses.
+----Write a query to list all courses with their respective syllabuses. Courses-Sylabus relationship ?
+SELECT Courses.CourseName, Syllabus.Description FROM Courses INNER JOIN Syllabus ON Courses.SyllabusId = Syllabus.SyllabusId; 
 
-----Write a query to find all comments for a specific course.
+----Write a query to find all comments for a specific course. Comments-Assignments relationship ? 
+SELECT Comments.CommentContent, Assignments.CourseId FROM comments INNER JOIN Assignments
+ON Comments.AssignmentId = Assignments.AssignmentId WHERE Assignments.CourseId = 2;
 
 ----Create a stored procedure to add a new student.
+CREATE OR ALTER PROCEDURE AddNewStudent
+    @UserName VARCHAR(64),
+    @FirstName VARCHAR(64),
+    @LastName VARCHAR(64),
+    @EmailAddress VARCHAR(128),
+    @PhoneNumber VARCHAR(16) 
+AS
+BEGIN 
+   INSERT INTO Users(UserName, FirstName, LastName, EmailAddress, PhoneNumber, Role)
+    VALUES (@UserName, @FirstName, @LastName, @EmailAddress, @PhoneNumber, 'Student');
+END;
+
+EXEC AddNewStudent 'Aisha123', 'Aisha' ,'Alnatour', 'Aisha.alnatour@gmail.com','05425555555' 
+SELECT * FROM Users;
 
 ----Create a stored procedure to add a new Assignment. Make sure the course assignments weights don’t go above 100.
+CREATE OR ALTER PROCEDURE AddNewAssignment
+    @CourseId INT,
+    @AssignmentTitle VARCHAR(128),
+    @Description TEXT,
+    @Weight FLOAT,
+    @MaxGrade INT,
+    @DueDate DATE
+AS
+BEGIN
 
-----Calculate function to calculate the Student Grade in a Course. Return ‘A', 'B’, etc…
+END;
+
+----Create function to calculate the Student Grade in a Course. Return ‘A', 'B’, etc…
 
 ----Create a function to calculate the GPA of a student.
 
