@@ -220,8 +220,22 @@ CREATE OR ALTER PROCEDURE AddNewAssignment
     @DueDate DATE
 AS
 BEGIN
-
+DECLARE @TotalWeight FLOAT;
+    SELECT @TotalWeight = SUM(Weight) FROM Assignments WHERE CourseId = @CourseId;
+    IF (@TotalWeight + @Weight) <= 1.0
+    BEGIN
+        INSERT INTO Assignments(CourseId, AssignmentTitle, Description, Weight, MaxGrade, DueDate)
+        VALUES (@CourseId, @AssignmentTitle, @Description, @Weight, @MaxGrade, @DueDate);
+    END
+    ELSE
+    BEGIN
+        PRINT 'ERROR THE TOTAL WEIGHT IS ABOVE %100';
+    END
 END;
+
+EXEC AddNewAssignment 1, 'SQL Assignment 6', 'Create a database backup strategy.', 0.15, 100, '2026-07-25' ---SHOULD GIVE ERROR
+EXEC AddNewAssignment 4, 'Web API Assignment 6', 'Create what is requested', 0.02, 100, '2026-07-25' ---SHOULD WORK
+SELECT * FROM Assignments;
 
 ----Create function to calculate the Student Grade in a Course. Return ‘A', 'B’, etc…
 
