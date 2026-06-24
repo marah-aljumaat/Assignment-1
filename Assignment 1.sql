@@ -281,7 +281,7 @@ INNER JOIN Assignments A
 WHERE A.CourseId = 4
     AND G.StudentId = 4;
 
-----20 Create a function to calculate the GPA of a student. ====needs improvemens
+----20 Create a function to calculate the GPA of a student. 
 CREATE OR ALTER FUNCTION CalculateStudentGPA(@StudentId INT)
 RETURNS FLOAT
 AS
@@ -291,19 +291,22 @@ BEGIN
     SELECT @GPA =
         ISNULL(
             SUM(
-                CASE dbo.CalculateStudentGrade(@StudentId, A.CourseId)
+                CASE dbo.CalculateStudentGrade(@StudentId, CourseId)
                     WHEN 'A' THEN 4.0
                     WHEN 'B' THEN 3.0
                     WHEN 'C' THEN 2.0
                     WHEN 'D' THEN 1.0
                     ELSE 0.0
                 END
-            )/ COUNT(DISTINCT A.CourseId),
-        0)
-    FROM Grades G
-    INNER JOIN Assignments A
-        ON G.AssignmentId = A.AssignmentId
-    WHERE G.StudentId = @StudentId;
+            ) / COUNT(*),0)
+    FROM(
+        SELECT DISTINCT A.CourseId
+        FROM Grades G
+        INNER JOIN Assignments A
+            ON G.AssignmentId = A.AssignmentId
+        WHERE G.StudentId = @StudentId ) AS StudentCourses;
 
     RETURN @GPA;
 END;
+SELECT dbo.CalculateStudentGPA(4) AS GPA;
+GO
