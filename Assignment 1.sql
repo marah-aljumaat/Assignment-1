@@ -133,6 +133,10 @@ SELECT * FROM Comments;
 ----Write SQL Statement to INSERT random grades for all students for every assignment.
 INSERT INTO Grades(AssignmentId, StudentId, Grade)
 VALUES 
+(2,1,95),
+(3,1,90),
+(4,1,88),
+(5,1,92),
 (1,1,100),
 (1,2,95),
 (1,3,90),
@@ -153,6 +157,7 @@ VALUES
 (5,2,87),
 (5,3,89),
 (5,4,84);
+
 SELECT * FROM Grades;
 
 
@@ -178,24 +183,28 @@ SELECT * FROM Comments;
 
 ----Write a query to list all students along with their grades for a specific course. Users-Grades relationship ? we alson need Assignments (so hard)
 UPDATE Users SET Role = 'Student' WHERE UserId = 1;
-SELECT Users.FirstName, Users.LastName, Grades.Grade, Assignments.CourseId FROM Users INNER JOIN Grades ON Users.UserId = Grades.StudentId ---link the Users table with the Grades table to get the names and grades 
-INNER JOIN Assignments ON Grades.AssignmentId = Assignments.AssignmentId
+SELECT Users.FirstName, Users.LastName, Grades.Grade, Assignments.CourseId FROM Users 
+    INNER JOIN Grades ON Users.UserId = Grades.StudentId ---link the Users table with the Grades table to get the names and grades 
+    INNER JOIN Assignments ON Grades.AssignmentId = Assignments.AssignmentId
 WHERE Assignments.CourseId =1;
 
 ----Write a query to calculate the average grade for each course. courses-gardes-assignments relationship ? (So hard)
-SELECT Courses.CourseName, AVG(Grades.Grade) AS AverageGrade FROM Courses INNER JOIN Assignments ON Courses.CourseId = Assignments.CourseId
-INNER JOIN Grades ON Assignments.AssignmentId = Grades.AssignmentId
+SELECT Courses.CourseName, AVG(Grades.Grade) AS AverageGrade FROM Courses
+    INNER JOIN Assignments ON Courses.CourseId = Assignments.CourseId
+    INNER JOIN Grades ON Assignments.AssignmentId = Grades.AssignmentId
 GROUP BY Courses.CourseName;
 
 ----Write a query to list all courses with their respective syllabuses. Courses-Sylabus relationship ?
-SELECT Courses.CourseName, Syllabus.Description FROM Courses INNER JOIN Syllabus ON Courses.SyllabusId = Syllabus.SyllabusId; 
+SELECT Courses.CourseName, Syllabus.Description FROM Courses 
+    INNER JOIN Syllabus ON Courses.SyllabusId = Syllabus.SyllabusId; 
 
 ----Write a query to find all comments for a specific course. Comments-Assignments relationship ? 
-SELECT Comments.CommentContent, Assignments.CourseId FROM comments INNER JOIN Assignments
-ON Comments.AssignmentId = Assignments.AssignmentId WHERE Assignments.CourseId = 2;
+SELECT Comments.CommentContent, Assignments.CourseId FROM comments 
+    INNER JOIN Assignments ON Comments.AssignmentId = Assignments.AssignmentId
+WHERE Assignments.CourseId = 2;
 
 ----Create a stored procedure to add a new student.
-CREATE OR ALTER PROCEDURE AddNewStudent
+CREATE OR ALTER PROCEDURE spAddNewStudent
     @UserName VARCHAR(64),
     @FirstName VARCHAR(64),
     @LastName VARCHAR(64),
@@ -207,7 +216,7 @@ BEGIN
     VALUES (@UserName, @FirstName, @LastName, @EmailAddress, @PhoneNumber, 'Student');
 END;
 
-EXEC AddNewStudent 'Aisha123', 'Aisha' ,'Alnatour', 'Aisha.alnatour@gmail.com','05425555555' 
+EXEC spAddNewStudent 'Nur123', 'Nur' ,'Hizan', 'Nur.hizan@gmail.com','0542555555' 
 SELECT * FROM Users;
 
 ----Create a stored procedure to add a new Assignment. Make sure the course assignments weights don’t go above 100.
@@ -222,7 +231,7 @@ AS
 BEGIN
 DECLARE @TotalWeight FLOAT;
     SELECT @TotalWeight = SUM(Weight) FROM Assignments WHERE CourseId = @CourseId;
-    IF (@TotalWeight + @Weight) <= 1.0
+    IF (ISNULL(@TotalWeight,0) + @Weight) <= 1.0
     BEGIN
         INSERT INTO Assignments(CourseId, AssignmentTitle, Description, Weight, MaxGrade, DueDate)
         VALUES (@CourseId, @AssignmentTitle, @Description, @Weight, @MaxGrade, @DueDate);
@@ -237,38 +246,64 @@ EXEC AddNewAssignment 1, 'SQL Assignment 6', 'Create a database backup strategy.
 EXEC AddNewAssignment 4, 'Web API Assignment 6', 'Create what is requested', 0.02, 100, '2026-07-25' ---SHOULD WORK
 SELECT * FROM Assignments;
 
-----Create function to calculate the Student Grade in a Course. Return ‘A', 'B’, etc…
-CREATE OR ALTER FUNCTION CalculateStudentGrade(@Grade FLOAT)
+----19 Create function to calculate the Student Grade in a Course. Return ‘A', 'B’, etc…  
+CREATE OR ALTER FUNCTION CalculateStudentGrade(@StudentId INT,@CourseId INT)
 RETURNS CHAR(1)
 AS
 BEGIN
     DECLARE @LetterGrade CHAR(1);
-    IF @Grade >= 90
+    DECLARE @Result FLOAT;
+    SELECT @Result =
+    ISNULL(SUM((CAST(G.Grade AS FLOAT) / A.MaxGrade) * A.Weight), 0)
+    FROM Grades G INNER JOIN Assignments A ON G.AssignmentId = A.AssignmentId
+    WHERE A.CourseId = @CourseId AND G.StudentId = @StudentId;
+
+    IF @Result >= 0.80
         SET @LetterGrade = 'A';
-    ELSE IF @Grade >= 80
+    ELSE IF @Result >= 0.70
         SET @LetterGrade = 'B';
-    ELSE IF @Grade >= 70
+    ELSE IF @Result >= 0.60
         SET @LetterGrade = 'C';
-    ELSE IF @Grade >= 60
+    ELSE IF @Result >= 0.50
         SET @LetterGrade = 'D';
     ELSE
         SET @LetterGrade = 'F';
+
     RETURN @LetterGrade;
 END;
 
-SELECT dbo.CalculateStudentGrade(50) AS LetterGrade; 
+SELECT dbo.CalculateStudentGrade(4,4) AS LetterGrade; 
 
-----Create a function to calculate the GPA of a student.
-CREATE OR ALTER FUNCTION CalculateGPA(@StudentId INT)
+SELECT SUM((CAST(G.Grade AS FLOAT) / A.MaxGrade) * A.Weight) 
+FROM Grades G
+INNER JOIN Assignments A
+    ON G.AssignmentId = A.AssignmentId
+WHERE A.CourseId = 4
+    AND G.StudentId = 4;
+
+----20 Create a function to calculate the GPA of a student. ====needs improvemens
+CREATE OR ALTER FUNCTION CalculateStudentGPA(@StudentId INT)
 RETURNS FLOAT
 AS
 BEGIN
     DECLARE @GPA FLOAT;
-    SELECT @GPA = AVG(Grade)
-    FROM Grades
-    WHERE StudentId = @StudentId;
+
+    SELECT @GPA =
+        ISNULL(
+            SUM(
+                CASE dbo.CalculateStudentGrade(@StudentId, A.CourseId)
+                    WHEN 'A' THEN 4.0
+                    WHEN 'B' THEN 3.0
+                    WHEN 'C' THEN 2.0
+                    WHEN 'D' THEN 1.0
+                    ELSE 0.0
+                END
+            )/ COUNT(DISTINCT A.CourseId),
+        0)
+    FROM Grades G
+    INNER JOIN Assignments A
+        ON G.AssignmentId = A.AssignmentId
+    WHERE G.StudentId = @StudentId;
+
     RETURN @GPA;
 END;
-
-SELECT dbo.CalculateGPA(2) AS CalculatedGPA;
-
